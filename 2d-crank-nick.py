@@ -258,10 +258,6 @@ def dirichlet_boundary_conditions(A, b, u, n, dt, nx, ny):
     return A, b
 
 
-def yolk_C(u):
-    return 3120 * (1037.3 - 0.0023 * u**2 - 0.1386 * u)
-
-
 def yolk_k(u):
     return 0.0008 * u + 0.395
 
@@ -270,35 +266,67 @@ def white_k(u):
     return 0.0013 * u + 0.5125
 
 
+def yolk_C(u):
+    return 3120 * (1037.3 - 0.0023 * u**2 - 0.1386 * u)
+
+
 def white_C(u):
     return 3800
 
 
 def k_egg(u, egg_domain):
-    conditions = [egg_domain == 1, egg_domain == 2]
-    values = [white_k(u), yolk_k(u)]
+    conditions = [egg_domain == 0, egg_domain == 1, egg_domain == 2]
+    values = [0, white_k(u), yolk_k(u)]
     return np.select(condlist=conditions, choicelist=values)
 
 
 def C_egg(u, egg_domain):
-    conditions = [egg_domain == 1, egg_domain == 2]
-    values = [white_C(u), yolk_C(u)]
+    conditions = [egg_domain == 0, egg_domain == 1, egg_domain == 2]
+    values = [0, white_C(u), yolk_C(u)]
     return np.select(condlist=conditions, choicelist=values)
 
 
-def create_egg_domain(nx, ny, Lx, Ly) -> np.ndarray:
+def egg_curve_squared(a: float, b: float, x: float | np.ndarray) -> float | np.ndarray:
+    return x * 0.5 * ((a - b) - 2 * x + np.sqrt(4 * b * x + (a - b) ** 2))
+
+
+def create_egg_domain(
+    nx, ny, Lx, Ly, yolk_radius_metres, B_EGG_SHAPE_PARAM
+) -> np.ndarray:
+    # 0 = outside
     # 1 = white
     # 2 = yolk
-    egg_domain = np.ones(shape=(nx, ny))
 
-    egg_domain[nx // 4 : 3 * nx // 4, ny // 4 : 3 * ny // 4] = 2
+    egg_domain = np.zeros(shape=(nx, ny))
+    xx = np.arange(start=0, stop=Lx, step=Lx / nx)
+    yy = np.arange(start=0, stop=Ly, step=Ly / ny)
+
+    for i, _ in enumerate(egg_domain):
+        for j, _ in enumerate(egg_domain[i]):
+            x = xx[i]
+            y = yy[j]
+
+            if y**2 <= egg_curve_squared(a=Lx, b=B_EGG_SHAPE_PARAM, x=x):
+                egg_domain[i, j] = 1
+
+            if (x - 2 * Lx / 3) ** 2 + y**2 <= yolk_radius_metres**2:
+                egg_domain[i, j] = 2
+
     return egg_domain
 
 
 def run_example_2d():
     # Simulation parameters
-    Lx, Ly = 0.08, 0.04  # Domain dimensions
-    nx, ny = 50, 50  # Number of grid points
+    EGG_LENGTH_METRES = 8 / 100
+    YOLK_RADIUS_METRES = 1.8 / 100
+    B = 0.09  # Egg shape parameter
+    nx, ny = 20, 20  # Number of grid points
+
+    # Lx, Ly domain dimensions
+    Lx = EGG_LENGTH_METRES  # Domain dimensions = egg length
+    # y dimension depends on how wide the egg is
+    Ly = float(np.max(np.sqrt(egg_curve_squared(a=Lx, b=B, x=np.linspace(0, Lx, nx)))))
+
     dx = Lx / (nx - 1)  # Spatial step size in x
     dy = Ly / (ny - 1)  # Spatial step size in y
     tmax = 60 * 5  # Maximum simulation time
@@ -313,7 +341,20 @@ def run_example_2d():
     u_init = (273 + 20) * np.ones_like(X)
 
     # Separate white and yolk
-    egg_domain = create_egg_domain(nx=nx, ny=ny, Lx=Lx, Ly=Ly)
+    egg_domain = create_egg_domain(
+        nx=nx,
+        ny=ny,
+        Lx=Lx,
+        Ly=Ly,
+        yolk_radius_metres=YOLK_RADIUS_METRES,
+        B_EGG_SHAPE_PARAM=B,
+    )
+
+    # Plot egg domain
+    plt.figure()
+    plt.imshow(egg_domain, extent=[0, Ly, 0, Lx])
+    plt.title("Egg domain")
+    plt.show()
 
     # Run simulation
     u_history, t_saved = crank_nicolson_diffusion_2d(
@@ -325,12 +366,6 @@ def run_example_2d():
         boundary_conditions=dirichlet_boundary_conditions,
         egg_domain=egg_domain,
     )
-
-    # Plot egg domain
-    plt.figure()
-    plt.imshow(egg_domain)
-    plt.title("Egg domain")
-    plt.show()
 
     # Plot results
     plot_times = [0, len(t_saved) // 4, len(t_saved) // 2, len(t_saved) - 1]
@@ -374,3 +409,19 @@ def run_example_2d():
 
 if __name__ == "__main__":
     run_example_2d()
+
+# %% Trials
+
+
+# def run_example_2d():
+
+
+# Separate white and yolk
+
+plt.show()
+
+# %%
+YOLK_RADIUS_METRES = 1.8 / 100
+EGG_LENGTH_METRES = 8 / 100
+egg_curve = np.sqrt(egg_curve_squared(a=EGG_LENGTH_METRES, b=B, x=x))
+np.max(egg_curve)
