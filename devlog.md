@@ -6,7 +6,8 @@ $$
 - Only consider half of an egg (symmetry). In my case, because the eggo is lying down, y>0.
 
 # TODOs
-- get better fit of domain to egg shape. Right now, N_Y is not computed according to the shape, so a lot of space is wasted in the array.
-
+- Move towards unstructured grid using egg_to_equation_system_map.
+- With the unstructured mesh, the matrix is not that sparse any more. Do we need sparse matrices??
+- Create a way to plot unstructured mesh
 # IDEAS
 - Make a transformation from cartesian coords to "ovoid" coords or radial coords and transform the PDE to solve. Might make the solution computationally less expensive (there are no "dead" cells), and it is more elegant overall. We like elegance.

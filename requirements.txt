@@ -3,3 +3,4 @@ numpy
 scipy
 ipython
 PyQt6
+tqdm
