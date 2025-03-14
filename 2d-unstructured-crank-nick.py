@@ -496,7 +496,7 @@ EGG_LENGTH_METRES = 8 / 100
 YOLK_RADIUS_METRES = 1.8 / 100
 WATER_TEMPERATURE_CELSIUS = 100
 B = 0.09  # Egg shape parameter
-nx, ny = 10, 10  # Number of grid points
+nx, ny = 50, 50  # Number of grid points
 
 # Lx, Ly domain dimensions
 Lx = EGG_LENGTH_METRES  # Domain dimensions = egg length
@@ -629,3 +629,27 @@ A, b = dirichlet_boundary_conditions(
     water_bath_temperature_BC=WATER_TEMPERATURE_CELSIUS + 273,
     egg_boundary_mesh_cells=egg_boundary_mesh_cells,
 )
+
+
+# %%
+def convert_unstructured_array_to_structured(
+    unstructured_arr: np.ndarray,
+    map_from_mesh_cell_numbers_to_coords: dict[int, tuple[int, int]],
+) -> np.ndarray:
+    structured_arr = np.zeros((nx, ny))
+    for cell_number, coords in map_from_mesh_cell_numbers_to_coords.items():
+        structured_arr[coords] = unstructured_arr[cell_number]
+    return structured_arr
+
+
+u_history_structured = []
+for u in u_history:
+    u_history_structured.append(
+        convert_unstructured_array_to_structured(
+            unstructured_arr=u,
+            map_from_mesh_cell_numbers_to_coords=map_from_mesh_cell_numbers_to_coords,
+        )
+    )
+
+plt.imshow(u_history_structured[1])
+plt.show()
