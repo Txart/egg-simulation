@@ -50,9 +50,7 @@ def crank_nicolson_diffusion_2d(
     N = len(u_init)
     nt = int(tmax / dt) + 1
 
-    # We'll save fewer time steps to save memory
-    save_interval = max(1, nt // 20)  # Save approximately 20 snapshots
-    n_saves = nt // save_interval + 1
+    n_saves = nt
 
     # Storage for solution at saved times
     u_history = np.zeros((n_saves, N))
@@ -76,16 +74,8 @@ def crank_nicolson_diffusion_2d(
             egg_to_equation_system_map=egg_to_equation_system_map,
         )
 
-        # Save at specified intervals
-        if timestep % save_interval == 0:
-            u_history[save_idx] = u
-            t_saved[save_idx] = timestep * dt
-            save_idx += 1
-
-    # Ensure the final state is saved
-    if (nt - 1) % save_interval != 0:
         u_history[save_idx] = u
-        t_saved[save_idx] = (nt - 1) * dt
+        t_saved[save_idx] = timestep * dt
         save_idx += 1
 
     return u_history[:save_idx], t_saved[:save_idx]
