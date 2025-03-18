@@ -339,6 +339,12 @@ def egg_curve_squared(a: float, b: float, x: float | np.ndarray) -> float | np.n
     return x * 0.5 * ((a - b) - 2 * x + np.sqrt(4 * b * x + (a - b) ** 2))
 
 
+def yolk_curve_squared(
+    yolk_radius: float, Lx: float, x: float | np.ndarray
+) -> float | np.ndarray:
+    return yolk_radius**2 - (x - 2 * Lx / 3) ** 2
+
+
 def create_egg_domain(
     nx, ny, Lx, Ly, yolk_radius_metres, B_EGG_SHAPE_PARAM
 ) -> np.ndarray:
@@ -358,7 +364,7 @@ def create_egg_domain(
             if y**2 <= egg_curve_squared(a=Lx, b=B_EGG_SHAPE_PARAM, x=x):
                 egg_domain[i, j] = 1
 
-            if (x - 2 * Lx / 3) ** 2 + y**2 <= yolk_radius_metres**2:
+            if y**2 <= yolk_curve_squared(yolk_radius=yolk_radius_metres, Lx=Lx, x=x):
                 egg_domain[i, j] = 2
 
     return egg_domain
@@ -570,44 +576,6 @@ u_history, t_saved = crank_nicolson_diffusion_2d(
     egg_to_equation_system_map=egg_to_equation_system_map,
 )
 
-# Plot results
-plot_times = [0, len(t_saved) // 4, len(t_saved) // 2, len(t_saved) - 1]
-
-fig = plt.figure(figsize=(16, 12))
-for i, time_idx in enumerate(plot_times):
-    ax = fig.add_subplot(2, 2, i + 1, projection="3d")
-    surf = ax.plot_surface(
-        X, Y, u_history[time_idx], cmap=cm.viridis, linewidth=0, antialiased=True
-    )
-    ax.set_xlabel("X")
-    ax.set_ylabel("Y")
-    ax.set_zlabel("u")
-    ax.set_title(f"t = {t_saved[time_idx]:.4f}")
-    fig.colorbar(surf, ax=ax, shrink=0.5, aspect=5)
-
-plt.tight_layout()
-plt.show()
-
-# Plot as 2D heat maps
-fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-axes = axes.flatten()
-
-for i, time_idx in enumerate(plot_times):
-    im = axes[i].imshow(
-        u_history[time_idx],
-        origin="lower",
-        extent=[0, Lx, 0, Ly],
-        cmap="viridis",
-        vmin=273,
-        vmax=273 + 100,
-    )
-    axes[i].set_title(f"t = {t_saved[time_idx]:.4f}")
-    axes[i].set_xlabel("X")
-    axes[i].set_ylabel("Y")
-    fig.colorbar(im, ax=axes[i])
-
-plt.tight_layout()
-plt.show()
 
 # %% Trials
 
@@ -642,14 +610,54 @@ def convert_unstructured_array_to_structured(
     return structured_arr
 
 
+def kelvin_to_celsius(T_kelvin: float | np.ndarray) -> float | np.ndarray:
+    return T_kelvin - 273
+
+
+def celsius_to_kelvin(T_celsius: float | np.ndarray) -> float | np.ndarray:
+    return T_celsius + 273
+
+
 u_history_structured = []
 for u in u_history:
     u_history_structured.append(
-        convert_unstructured_array_to_structured(
-            unstructured_arr=u,
-            map_from_mesh_cell_numbers_to_coords=map_from_mesh_cell_numbers_to_coords,
+        kelvin_to_celsius(
+            convert_unstructured_array_to_structured(
+                unstructured_arr=u,
+                map_from_mesh_cell_numbers_to_coords=map_from_mesh_cell_numbers_to_coords,
+            )
         )
     )
 
-plt.imshow(u_history_structured[1])
+plot_times = [0, len(t_saved) // 4, len(t_saved) // 2, len(t_saved) - 1]
+
+# Plot as 2D heat maps
+fig, axes = plt.subplots(2, 2)
+axes = axes.flatten()
+
+for i, time_idx in enumerate(plot_times):
+    im = axes[i].imshow(
+        u_history_structured[time_idx],
+        origin="lower",
+        extent=[0, Ly, 0, Lx],
+        cmap="viridis",
+        vmin=20,
+        vmax=100,
+    )
+    axes[i].set_title(f"t = {t_saved[time_idx]:.4f}")
+    axes[i].set_xlabel("X")
+    axes[i].set_ylabel("Y")
+    fig.colorbar(im, ax=axes[i])
+
+    # add egg white and yolk
+    xx = np.arange(start=0, stop=Lx, step=dx)
+    white_yy = np.sqrt(egg_curve_squared(a=Lx, b=B, x=xx))
+    yolk_yy = np.sqrt(yolk_curve_squared(yolk_radius=YOLK_RADIUS_METRES, Lx=Lx, x=xx))
+    axes[i].plot(white_yy, xx, c="white")
+    axes[i].plot(yolk_yy, xx, c="black")
+
+plt.tight_layout()
 plt.show()
+
+
+# %%
