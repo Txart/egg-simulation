@@ -560,7 +560,7 @@ plt.title("Egg domain")
 plt.show()
 
 # Run simulation
-u_history, t_saved = crank_nicolson_diffusion_2d(
+T_history, t_saved = crank_nicolson_diffusion_2d(
     u_init,
     tmax,
     dt,
@@ -592,9 +592,9 @@ def celsius_to_kelvin(T_celsius: float | np.ndarray) -> float | np.ndarray:
     return T_celsius + 273
 
 
-u_history_structured = []
-for u in u_history:
-    u_history_structured.append(
+T_history_structured = []
+for u in T_history:
+    T_history_structured.append(
         kelvin_to_celsius(
             convert_unstructured_array_to_structured(
                 unstructured_arr=u,
@@ -611,7 +611,7 @@ axes = axes.flatten()
 
 for i, time_idx in enumerate(plot_times):
     im = axes[i].imshow(
-        u_history_structured[time_idx],
+        T_history_structured[time_idx],
         origin="lower",
         extent=[0, Ly, 0, Lx],
         cmap="viridis",
@@ -634,23 +634,71 @@ plt.tight_layout()
 plt.show()
 
 
+# %% Degree of cooking
+
+
+def log_white_A():
+    return np.log(4.85 * 10**60)
+
+
+def log_yolk_A():
+    return np.log(2.72 * 10**50)
+
+
+def white_Ea():
+    return 4.185 * 10**5
+
+
+def yolk_Ea():
+    return 3.443 * 10**5
+
+
+def log_A_egg(unstructured_egg_domain):
+    conditions = [
+        unstructured_egg_domain == 0,
+        unstructured_egg_domain == 1,
+        unstructured_egg_domain == 2,
+    ]
+    values = [0, log_white_A(), log_yolk_A()]
+    return np.select(condlist=conditions, choicelist=values)
+
+
+def Ea_egg(unstructured_egg_domain):
+    conditions = [
+        unstructured_egg_domain == 0,
+        unstructured_egg_domain == 1,
+        unstructured_egg_domain == 2,
+    ]
+    values = [0, white_Ea(), yolk_Ea()]
+    return np.select(condlist=conditions, choicelist=values)
+
+
+def R():
+    # J/(K*mol)
+    return 8.314
+
+
+nt = T_history.shape[0]
+
+degree_of_cooking_initial_condition = np.zeros_like(T_history[0])
+degree_of_cooking_history = [0] * nt
+
+degree_of_cooking_history.append(degree_of_cooking_initial_condition)
+
+# forward Euler
+d_o_c = degree_of_cooking_initial_condition
+for timestep, t in enumerate(range(0, nt)):
+    breakpoint()
+    Ea = Ea_egg(unstructured_egg_domain)
+    log_A = log_A_egg(unstructured_egg_domain)
+
+    exponent = log_A - Ea / (R() * T_history[timestep])
+
+    exponential_term = np.exp(exponent)
+
+    d_o_c = dt * exponential_term * (1 - d_o_c) + d_o_c
+
+    degree_of_cooking_history[timestep + 1] = d_o_c
+
+
 # %% Trials
-
-A, b = build_matrix_and_b_equations(
-    u=u_init,
-    dt=dt,
-    dx=dx,
-    dy=dy,
-    unstructured_egg_domain=unstructured_egg_domain,
-    nearest_neighbors=nearest_neighbors,
-    egg_boundary_mesh_cells=egg_boundary_mesh_cells,
-)
-
-# Apply boundary conditions
-A, b = dirichlet_boundary_conditions(
-    A=A,
-    b=b,
-    dt=dt,
-    water_bath_temperature_BC=WATER_TEMPERATURE_CELSIUS + 273,
-    egg_boundary_mesh_cells=egg_boundary_mesh_cells,
-)
