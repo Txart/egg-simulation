@@ -3,7 +3,7 @@
 # %%
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, lil_matrix
 from scipy.sparse.linalg import spsolve
 from matplotlib import cm
 from tqdm import tqdm
@@ -124,6 +124,9 @@ def compute_next_u(
             water_bath_temperature_BC=WATER_TEMPERATURE_CELSIUS + 273,
             egg_boundary_mesh_cells=egg_boundary_mesh_cells,
         )
+
+        # convert lil matrix to csr matrix
+        A = csr_matrix(A)
 
         # Solve system
         u_new_iter = spsolve(A, b)
@@ -246,6 +249,7 @@ def build_matrix_and_b_equations(
 
     # Construct sparse matrix
     A = csr_matrix((data, (row_ind, col_ind)), shape=(N, N))
+    A = lil_matrix(A)
 
     return A, b
 
@@ -577,29 +581,9 @@ u_history, t_saved = crank_nicolson_diffusion_2d(
 )
 
 
-# %% Trials
-
-A, b = build_matrix_and_b_equations(
-    u=u_init,
-    dt=dt,
-    dx=dx,
-    dy=dy,
-    unstructured_egg_domain=unstructured_egg_domain,
-    nearest_neighbors=nearest_neighbors,
-    egg_boundary_mesh_cells=egg_boundary_mesh_cells,
-)
-
-# Apply boundary conditions
-A, b = dirichlet_boundary_conditions(
-    A=A,
-    b=b,
-    dt=dt,
-    water_bath_temperature_BC=WATER_TEMPERATURE_CELSIUS + 273,
-    egg_boundary_mesh_cells=egg_boundary_mesh_cells,
-)
+# %% Plotting
 
 
-# %%
 def convert_unstructured_array_to_structured(
     unstructured_arr: np.ndarray,
     map_from_mesh_cell_numbers_to_coords: dict[int, tuple[int, int]],
@@ -660,4 +644,23 @@ plt.tight_layout()
 plt.show()
 
 
-# %%
+# %% Trials
+
+A, b = build_matrix_and_b_equations(
+    u=u_init,
+    dt=dt,
+    dx=dx,
+    dy=dy,
+    unstructured_egg_domain=unstructured_egg_domain,
+    nearest_neighbors=nearest_neighbors,
+    egg_boundary_mesh_cells=egg_boundary_mesh_cells,
+)
+
+# Apply boundary conditions
+A, b = dirichlet_boundary_conditions(
+    A=A,
+    b=b,
+    dt=dt,
+    water_bath_temperature_BC=WATER_TEMPERATURE_CELSIUS + 273,
+    egg_boundary_mesh_cells=egg_boundary_mesh_cells,
+)
