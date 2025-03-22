@@ -3,7 +3,7 @@
 # %%
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.sparse import csr_matrix, lil_matrix
+from scipy.sparse import csr_matrix, lil_matrix, diags_array
 from scipy.sparse.linalg import spsolve
 from matplotlib import cm
 from tqdm import tqdm
@@ -66,12 +66,9 @@ def crank_nicolson_diffusion_2d(
     for timestep in tqdm(range(1, nt)):
         u = compute_next_u(
             u=u,
-            timestep=timestep,
             dt=dt,
             dx=dx,
             dy=dy,
-            egg_domain=egg_domain,
-            egg_to_equation_system_map=egg_to_equation_system_map,
         )
 
         u_history[save_idx] = u
@@ -83,12 +80,9 @@ def crank_nicolson_diffusion_2d(
 
 def compute_next_u(
     u,
-    timestep,
     dt,
     dx,
     dy,
-    egg_domain,
-    egg_to_equation_system_map,
 ):
     # Update for nonlinearity: use simple fixed-point iteration
     max_iter = 10
@@ -128,7 +122,7 @@ def compute_next_u(
 
         u_new = u_new_iter
 
-        return u_new
+    return u_new
 
 
 def build_matrix_and_b_equations(
@@ -299,7 +293,7 @@ def yolk_C(u):
 
 
 def white_C(u):
-    return 3800
+    return 3800 * (1043.3 - 0.0041 * u**2 - 0.0115 * u)
 
 
 def k_egg(u, unstructured_egg_domain):
@@ -492,10 +486,10 @@ def create_unstructured_array_from_structured_array(
 
 # %%
 # Simulation parameters
-EGG_LENGTH_METRES = 8 / 100
-YOLK_RADIUS_METRES = 1.8 / 100
+EGG_LENGTH_METRES = 7 / 100
+YOLK_RADIUS_METRES = 1.5 / 100
 WATER_TEMPERATURE_CELSIUS = 100
-B = 0.09  # Egg shape parameter
+B = 0.05  # Egg shape parameter
 nx, ny = 100, 100  # Number of grid points
 
 # Lx, Ly domain dimensions
@@ -559,7 +553,7 @@ plt.imshow(egg_domain, extent=[0, Ly, 0, Lx])
 plt.title("Egg domain")
 plt.show()
 
-# Run simulation
+# %% Run simulation
 T_history, t_saved = crank_nicolson_diffusion_2d(
     u_init,
     tmax,
@@ -681,7 +675,7 @@ def R():
 nt = T_history.shape[0]
 
 degree_of_cooking_initial_condition = np.zeros_like(T_history[0])
-degree_of_cooking_history = [np.zeros(1)] * nt
+degree_of_cooking_history = [np.zeros(1)] * (nt - 1)
 
 degree_of_cooking_history[0] = degree_of_cooking_initial_condition
 
@@ -698,9 +692,10 @@ for timestep, t in enumerate(tqdm(range(1, nt))):
     exponent = log_A - Ea / (R() * T_history[timestep])
     b = degree_of_cooking_history[timestep - 1] + dt * np.exp(exponent)
 
-    A_matrix = np.diag(1 + dt * np.exp(exponent))
+    A_matrix = diags_array(1 / (1 + dt * np.exp(exponent)))
 
-    degree_of_cooking_history[timestep] = np.linalg.solve(A_matrix, b)
+    # Inverse of diagonal matrix is a diagonal matrix with elements 1/diagonal
+    degree_of_cooking_history[timestep] = A_matrix @ b
 
 
 # %% Plot as 2D heat maps
