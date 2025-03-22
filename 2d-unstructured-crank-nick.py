@@ -496,7 +496,7 @@ EGG_LENGTH_METRES = 8 / 100
 YOLK_RADIUS_METRES = 1.8 / 100
 WATER_TEMPERATURE_CELSIUS = 100
 B = 0.09  # Egg shape parameter
-nx, ny = 50, 50  # Number of grid points
+nx, ny = 100, 100  # Number of grid points
 
 # Lx, Ly domain dimensions
 Lx = EGG_LENGTH_METRES  # Domain dimensions = egg length
@@ -681,24 +681,73 @@ def R():
 nt = T_history.shape[0]
 
 degree_of_cooking_initial_condition = np.zeros_like(T_history[0])
-degree_of_cooking_history = [0] * nt
+degree_of_cooking_history = [np.zeros(1)] * nt
 
-degree_of_cooking_history.append(degree_of_cooking_initial_condition)
+degree_of_cooking_history[0] = degree_of_cooking_initial_condition
 
-# forward Euler
-d_o_c = degree_of_cooking_initial_condition
-for timestep, t in enumerate(range(0, nt)):
-    breakpoint()
+Ea = Ea_egg(unstructured_egg_domain)
+log_A = log_A_egg(unstructured_egg_domain)
+
+
+# backwards Euler
+
+for timestep, t in enumerate(tqdm(range(1, nt))):
     Ea = Ea_egg(unstructured_egg_domain)
     log_A = log_A_egg(unstructured_egg_domain)
 
     exponent = log_A - Ea / (R() * T_history[timestep])
+    b = degree_of_cooking_history[timestep - 1] + dt * np.exp(exponent)
 
-    exponential_term = np.exp(exponent)
+    A_matrix = np.diag(1 + dt * np.exp(exponent))
 
-    d_o_c = dt * exponential_term * (1 - d_o_c) + d_o_c
+    degree_of_cooking_history[timestep] = np.linalg.solve(A_matrix, b)
 
-    degree_of_cooking_history[timestep + 1] = d_o_c
 
+# %% Plot as 2D heat maps
+
+degree_of_cooking_history_structured = []
+for X in degree_of_cooking_history:
+    degree_of_cooking_history_structured.append(
+        convert_unstructured_array_to_structured(
+            unstructured_arr=X,
+            map_from_mesh_cell_numbers_to_coords=map_from_mesh_cell_numbers_to_coords,
+        )
+    )
+
+timesteps_saved = len(degree_of_cooking_history)
+plot_times = [0, timesteps_saved // 4, timesteps_saved // 2, timesteps_saved - 1]
+
+fig, axes = plt.subplots(2, 2)
+axes = axes.flatten()
+
+for i, time_idx in enumerate(plot_times):
+    im = axes[i].imshow(
+        degree_of_cooking_history_structured[time_idx],
+        origin="lower",
+        extent=[0, Ly, 0, Lx],
+        cmap="viridis",
+        vmin=0,
+        vmax=1,
+    )
+    axes[i].set_title(f"t = {t_saved[time_idx]:.4f}")
+    axes[i].set_xlabel("X")
+    axes[i].set_ylabel("Y")
+    fig.colorbar(im, ax=axes[i])
+
+    # add egg white and yolk
+    xx = np.arange(start=0, stop=Lx, step=dx)
+    white_yy = np.sqrt(egg_curve_squared(a=Lx, b=B, x=xx))
+    yolk_yy = np.sqrt(yolk_curve_squared(yolk_radius=YOLK_RADIUS_METRES, Lx=Lx, x=xx))
+    axes[i].plot(white_yy, xx, c="white")
+    axes[i].plot(yolk_yy, xx, c="black")
+
+plt.tight_layout()
+plt.show()
 
 # %% Trials
+
+plt.imshow(
+    convert_unstructured_array_to_structured(Ea, map_from_mesh_cell_numbers_to_coords),
+    extent=[0, Ly, 0, Lx],
+)
+plt.show()
