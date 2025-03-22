@@ -6,7 +6,7 @@ $$
 - Only consider half of an egg (symmetry). In my case, because the eggo is lying down, y>0.
 
 # TODOs
-- Improve efficiency of the backwards Euler solution for the degree of cooking: use sparse matrices and clever algos, your matrix is diagonal!
+- Perhaps the egg still cooks too fast?
 - With the unstructured mesh, the matrix is not that sparse any more. Do we need sparse matrices??
 - Move plot of unstructured egg from trial zone to proper code.
 # IDEAS
