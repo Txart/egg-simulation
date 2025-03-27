@@ -1,11 +1,11 @@
 - Egg shaped curve from here: https://nyjp07.com/index_egg_E.html
 
-$$
-(x^2 + y^2)^2 = a*x^3 + (a-b)*x*y^2
+Currently building a python package to publish to PyPI and to load via pyodide in JS.
 
-- Only consider half of an egg (symmetry). In my case, because the eggo is lying down, y>0.
 
 # TODOs
+- Add the (commented out) degree of cooking code from the end of main.py to the library boil_an_egg.
+
 - Perhaps the egg still cooks too fast?
 - With the unstructured mesh, the matrix is not that sparse any more. Do we need sparse matrices??
 - Move plot of unstructured egg from trial zone to proper code.
