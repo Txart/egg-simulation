@@ -16,37 +16,6 @@
     <div>Output:</div>
     <textarea id="output" style="width: 100%" rows="6" disabled></textarea>
 
-    <script>
-      const output = document.getElementById("output");
-      const code = document.getElementById("code");
-
-      function addToOutput(s) {
-        output.value += ">>>" + code.value + "\n" + s + "\n";
-      }
-
-      output.value = "Initializing...\n";
-      // init Pyodide
-      async function main() {
-        let pyodide = await loadPyodide();
-        await pyodide.loadPackage("micropip");
-        const micropip = pyodide.pyimport("micropip");
-        await micropip.install("boil-an-egg");
-        output.value += "Ready!\n";
-        return pyodide;
-      }
-      let pyodideReadyPromise = main();
-
-      async function evaluatePython() {
-        let pyodide = await pyodideReadyPromise;
-        try {
-          let output = pyodide.runPython(`
-            import numpy
-            numpy.sum([1, 2])`);
-          addToOutput(output);
-        } catch (err) {
-          addToOutput(err);
-        }
-      }
-    </script>
+    <script src="egg-pyodide.js"></script>
   </body>
 </html>

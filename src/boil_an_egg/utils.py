@@ -91,7 +91,7 @@ def compute_next_u(
     # Update for nonlinearity: use simple fixed-point iteration
     max_iter = 10
     tolerance = 1e-6
-    u_new = u.copy()
+    u_new = np.copy(u)
 
     for iteration in range(max_iter):
         A, b = build_matrix_and_b_equations(
@@ -127,6 +127,19 @@ def compute_next_u(
         u_new = u_new_iter
 
     return u_new
+
+
+def JS_API_compute_next_u(
+    u,
+    dt,
+    dx,
+    dy,
+    unstructured_egg_domain,
+    nearest_neighbors,
+    egg_boundary_mesh_cells,
+    water_temperature_celsius,
+):
+    u = np.array(u)
 
 
 def build_matrix_and_b_equations(
