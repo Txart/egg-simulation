@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.sparse import csr_matrix, lil_matrix
 from scipy.sparse.linalg import spsolve
-from tqdm import tqdm
 
 
 # %%
@@ -60,7 +59,7 @@ def crank_nicolson_diffusion_2d(
 
     # Main time loop
     save_idx = 1
-    for timestep in tqdm(range(1, nt)):
+    for timestep in range(1, nt):
         u = compute_next_u(
             u=u,
             dt=dt,

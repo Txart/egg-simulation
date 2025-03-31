@@ -1,6 +1,6 @@
 matplotlib
 numpy
-scipy
 ipython
 PyQt6
 tqdm
+-e .
