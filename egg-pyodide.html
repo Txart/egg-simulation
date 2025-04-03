@@ -2,19 +2,26 @@
 <html>
   <head>
     <script src="https://cdn.jsdelivr.net/pyodide/v0.27.4/full/pyodide.js"></script>
+    <script
+      src="https://cdn.plot.ly/plotly-3.0.1.min.js"
+      charset="utf-8"
+    ></script>
   </head>
 
   <body>
-    <p>
-      You can execute any Python code. Just enter something in the box below and
-      click the button.
-    </p>
+    <p>You can execute the Python code by hitting the button.</p>
     <input id="code" value="sum([1, 2, 3, 4, 5])" />
-    <button onclick="evaluatePython()">Run</button>
+    <button onclick="evaluatePython()">Start simulation</button>
     <br />
     <br />
     <div>Output:</div>
     <textarea id="output" style="width: 100%" rows="6" disabled></textarea>
+    <div id="status">Simulation status</div>
+    <!-- Plots -->
+    <p>Temperature plot</p>
+    <div id="temperature_plot" style="width: 1000px; height: 1250px"></div>
+    <p>Degree of cooking plot</p>
+    <div id="doc_plot" style="width: 1000px; height: 1250px"></div>
 
     <script src="egg-pyodide.js"></script>
   </body>

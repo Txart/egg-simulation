@@ -140,6 +140,10 @@ def JS_API_compute_next_u(
     water_temperature_celsius,
 ):
     u = np.array(u)
+    dt = float(dt)
+    dx = float(dx)
+    dy = float(dy)
+    unstructured_egg_domain
 
 
 def build_matrix_and_b_equations(
@@ -510,3 +514,99 @@ def create_unstructured_array_from_structured_array(
         unstructured_array[num] = structured_array[coords]
 
     return unstructured_array
+
+
+def convert_unstructured_array_to_structured(
+    nx: int,
+    ny: int,
+    unstructured_arr: np.ndarray,
+    map_from_mesh_cell_numbers_to_coords: dict[int, tuple[int, int]],
+) -> np.ndarray:
+    structured_arr = np.zeros((nx, ny))
+    for cell_number, coords in map_from_mesh_cell_numbers_to_coords.items():
+        structured_arr[coords] = unstructured_arr[cell_number]
+    return structured_arr
+
+
+def kelvin_to_celsius(T_kelvin: float | np.ndarray) -> float | np.ndarray:
+    return T_kelvin - 273
+
+
+def celsius_to_kelvin(T_celsius: float | np.ndarray) -> float | np.ndarray:
+    return T_celsius + 273
+
+
+def turn_egg_upside_down(u: np.ndarray) -> np.ndarray:
+    return np.flip(u, 0)
+
+
+def get_whole_egg(u: np.ndarray) -> np.ndarray:
+    """
+    We only compute half an egg. This duplicates the result with a vertical mirror.
+    """
+    u_mirror = np.flip(u, 1)
+    u_mirror = u_mirror[:, :-1]  # Do not repeat central node
+
+    # Egg appears to be flipped
+    u_whole = np.concatenate((u_mirror, u), axis=1)
+
+    return turn_egg_upside_down(u_whole)
+
+
+def log_white_A():
+    return np.log(4.85 * 10**60)
+
+
+def log_yolk_A():
+    return np.log(2.72 * 10**50)
+
+
+def white_Ea():
+    return 4.185 * 10**5
+
+
+def yolk_Ea():
+    return 3.443 * 10**5
+
+
+def log_A_egg(unstructured_egg_domain):
+    conditions = [
+        unstructured_egg_domain == 0,
+        unstructured_egg_domain == 1,
+        unstructured_egg_domain == 2,
+    ]
+    values = [0, log_white_A(), log_yolk_A()]
+    return np.select(condlist=conditions, choicelist=values)
+
+
+def Ea_egg(unstructured_egg_domain):
+    conditions = [
+        unstructured_egg_domain == 0,
+        unstructured_egg_domain == 1,
+        unstructured_egg_domain == 2,
+    ]
+    values = [0, white_Ea(), yolk_Ea()]
+    return np.select(condlist=conditions, choicelist=values)
+
+
+def R():
+    # J/(K*mol)
+    return 8.314
+
+
+def compute_next_degree_of_cooking(
+    current_T: np.ndarray,
+    previous_degree_of_cooking: np.ndarray,
+    dt: float,
+    Ea: np.ndarray,
+    log_A: np.ndarray,
+) -> np.ndarray:
+    # backwards Euler
+    exponent = log_A - Ea / (R() * current_T)
+    b = previous_degree_of_cooking + dt * np.exp(exponent)
+
+    # The matrix is exactly diagonal, so a vector is enough
+    A_matrix = np.array(1 / (1 + dt * np.exp(exponent)))
+
+    # Element-wise multiplication is equivalent to diagonal matrix @ vector
+    return np.multiply(A_matrix, b)
