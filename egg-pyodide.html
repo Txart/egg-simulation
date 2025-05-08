@@ -1,3 +1,33 @@
+<!-- <!doctype html> -->
+<!-- <html> -->
+<!--   <head> -->
+<!--     <script src="https://cdn.jsdelivr.net/pyodide/v0.27.4/full/pyodide.js"></script> -->
+<!--     <script -->
+<!--       src="https://cdn.plot.ly/plotly-3.0.1.min.js" -->
+<!--       charset="utf-8" -->
+<!--     ></script> -->
+<!--   </head> -->
+<!---->
+<!--   <body> -->
+<!--     <p>You can execute the Python code by hitting the button.</p> -->
+<!--     <input id="code" value="sum([1, 2, 3, 4, 5])" /> -->
+<!--     <button onclick="evaluatePython()">Start simulation</button> -->
+<!--     <br /> -->
+<!--     <br /> -->
+<!--     <div>Output:</div> -->
+<!--     <textarea id="output" style="width: 100%" rows="6" disabled></textarea> -->
+<!--     <div id="status">Simulation status</div> -->
+<!-- Plots -->
+<!--     <p>Temperature plot</p> -->
+<!--     <div id="temperature_plot" style="width: 1000px; height: 1250px"></div> -->
+<!--     <p>Degree of cooking plot</p> -->
+<!--     <div id="doc_plot" style="width: 1000px; height: 1250px"></div> -->
+<!---->
+<!--     <script src="egg-pyodide.js"></script> -->
+<!--   </body> -->
+<!-- </html> -->
+
+
 <!doctype html>
 <html>
   <head>
@@ -6,23 +36,94 @@
       src="https://cdn.plot.ly/plotly-3.0.1.min.js"
       charset="utf-8"
     ></script>
+    <link rel="stylesheet" type="text/css" href="egg-pyodide.css">
   </head>
 
   <body>
-    <p>You can execute the Python code by hitting the button.</p>
-    <input id="code" value="sum([1, 2, 3, 4, 5])" />
-    <button onclick="evaluatePython()">Start simulation</button>
+    <h1>Egg Boiling Simulation</h1>
+    
+    <div class="parameter-container">
+      <h2>Simulation Parameters</h2>
+      
+      <div class="parameter-group">
+        <div class="parameter-field">
+          <label for="egg-length">Egg Length (cm):</label>
+          <div class="slider-container">
+            <input type="range" id="egg-length" min="5" max="9" step="0.1" value="7">
+            <span id="egg-length-value" class="value-display">7.0</span>
+          </div>
+        </div>
+        <div class="parameter-field">
+          <label for="yolk-radius">Yolk Radius (cm):</label>
+          <div class="slider-container">
+            <input type="range" id="yolk-radius" min="1" max="2.5" step="0.1" value="1.5">
+            <span id="yolk-radius-value" class="value-display">1.5</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="parameter-group">
+        <div class="parameter-field">
+          <label for="water-temperature">Water Temperature (&deg;C):</label>
+          <div class="slider-container">
+            <input type="range" id="water-temperature" min="80" max="100" step="1" value="100">
+            <span id="water-temperature-value" class="value-display">100</span>
+          </div>
+        </div>
+        <div class="parameter-field"> <label for="egg-shape">Egg Shape Parameter (B):</label>
+          <div class="slider-container">
+            <input type="range" id="egg-shape" min="0.01" max="0.2" step="0.01" value="0.05">
+            <span id="egg-shape-value" class="value-display">0.05</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="parameter-group">
+        <div class="parameter-field">
+          <label for="grid-size">Grid Size (n &times; n):</label>
+          <div class="slider-container">
+            <input type="range" id="grid-size" min="20" max="100" step="5" value="50">
+            <span id="grid-size-value" class="value-display">50</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <button id="run-btn" onclick="evaluatePython()">Start Simulation</button>
     <br />
     <br />
     <div>Output:</div>
-    <textarea id="output" style="width: 100%" rows="6" disabled></textarea>
-    <div id="status">Simulation status</div>
+    <textarea id="output" rows="6" disabled></textarea>
+    <div id="status">Ready to run simulation</div>
+    
     <!-- Plots -->
     <p>Temperature plot</p>
-    <div id="temperature_plot" style="width: 1000px; height: 1250px"></div>
+    <div id="temperature_plot" style="width: 400px; height: 500px"></div>
     <p>Degree of cooking plot</p>
-    <div id="doc_plot" style="width: 1000px; height: 1250px"></div>
+    <div id="doc_plot" style="width: 400px; height: 500px"></div>
 
     <script src="egg-pyodide.js"></script>
+    <script>
+      // Update displayed values when sliders change
+      document.getElementById('egg-length').addEventListener('input', function() {
+        document.getElementById('egg-length-value').textContent = this.value;
+      });
+      
+      document.getElementById('yolk-radius').addEventListener('input', function() {
+        document.getElementById('yolk-radius-value').textContent = this.value;
+      });
+      
+      document.getElementById('water-temperature').addEventListener('input', function() {
+        document.getElementById('water-temperature-value').textContent = this.value;
+      });
+      
+      document.getElementById('egg-shape').addEventListener('input', function() {
+        document.getElementById('egg-shape-value').textContent = this.value;
+      });
+      
+      document.getElementById('grid-size').addEventListener('input', function() {
+        document.getElementById('grid-size-value').textContent = this.value;
+      });
+    </script>
   </body>
 </html>

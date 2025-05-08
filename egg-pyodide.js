@@ -1,35 +1,65 @@
 const output = document.getElementById("output");
-const code = document.getElementById("code");
+const statusElement = document.getElementById("status");
 
 function addToOutput(s) {
-    output.value += ">>>" + code.value + "\n" + s + "\n";
+    output.value += ">>>" + "\n" + s + "\n";
+}
+function updateStatus(message) {
+    statusElement.textContent = message;
 }
 
 output.value = "Initializing...\n";
 
 // init Pyodide
 async function main() {
+    updateStatus("Loading Pyodide...");
     let pyodide = await loadPyodide();
+    updateStatus("Loading micropip...");
     await pyodide.loadPackage("micropip");
     const micropip = pyodide.pyimport("micropip");
+    updateStatus("Installing boil-an-egg package...");
     await micropip.install("boil-an-egg");
     output.value += "Ready!\n";
+    updateStatus("Ready to run simulation");
     return pyodide;
 }
 let pyodideReadyPromise = main();
 
+// Get parameter values from UI
+function getParameters() {
+    return {
+        eggLength: parseFloat(document.getElementById("egg-length").value) /
+            100, // Convert to meters
+        yolkRadius: parseFloat(document.getElementById("yolk-radius").value) /
+            100, // Convert to meters
+        waterTemperature: parseFloat(
+            document.getElementById("water-temperature").value,
+        ),
+        eggShape: parseFloat(document.getElementById("egg-shape").value),
+        gridSize: parseInt(document.getElementById("grid-size").value),
+    };
+}
+
 async function evaluatePython() {
     let pyodide = await pyodideReadyPromise;
+    const runButton = document.getElementById("run-btn");
+
     try {
+        runButton.disabled = true;
+        updateStatus("Running simulation...");
+        output.value = "Starting simulation with custom parameters...\n";
+        // Get parameters from UI
+        const params = getParameters();
+
         pyodide.runPython(`
 import boil_an_egg.utils as bae
 import numpy as np
 
-EGG_LENGTH_METRES = 7 / 100
-YOLK_RADIUS_METRES = 1.5 / 100
-WATER_TEMPERATURE_CELSIUS = 100
-B = 0.05  # Egg shape parameter
-nx, ny = 50, 50  # Number of grid points
+EGG_LENGTH_METRES = ${params.eggLength}
+YOLK_RADIUS_METRES = ${params.yolkRadius}
+WATER_TEMPERATURE_CELSIUS = ${params.waterTemperature}
+B = ${params.eggShape}  # Egg shape parameter
+nx, ny = ${params.gridSize}, ${params.gridSize}  # Number of grid points
 
 # Lx, Ly domain dimensions
 Lx = EGG_LENGTH_METRES  # Domain dimensions = egg length
@@ -312,5 +342,7 @@ log_A = bae.log_A_egg(unstructured_egg_domain)
         await runSimulation();
     } catch (err) {
         addToOutput(err);
+    } finally {
+        runButton.disabled = false;
     }
 }
